@@ -10,6 +10,17 @@ The lab is built to demonstrate hands-on skills in:
 - documentation
 - troubleshooting
 
+This lab demonstrates the infrastructural design, deployment, and operation using:
+
+- Virtualization (Proxmox VE)  
+- Network segmentation and firewalling (pfSense)  
+- Linux and Windows systems  
+- Backup and recovery strategies  
+- Infrastructure automation and operational practices  
+
+This lab reflects practical experience in building and managing production-like systems.
+
+
 ## Lab Scenario
 This lab simulates Northwind Digital Services Ltd, a mid-sized UK company with:
 - 120 users
@@ -20,24 +31,108 @@ This lab simulates Northwind Digital Services Ltd, a mid-sized UK company with:
 - Microsoft 365 collaboration
 - Windows and Linux workloads
 
-## Phase 1 Focus
-Phase 1 is focused on building the infrastructure foundation:
-- Proxmox installation
-- virtual networking / bridges
-- IP planning
-- VM creation
-- templates and clones
-- Storage administration
-- Backups and Recovery
-- snapshots
-- Resource Management
-- Basic automation
-- documentation
+### Core Components
 
-## Repository Structure
-- `docs/` → documentation
-- `diagrams/` → network and architecture diagrams
-- `screenshots/` → screenshots from the build
+- Proxmox VE (Hypervisor)  
+- pfSense (Firewall and Router)  
+- Linux Servers (Ubuntu with NGINX)  
+- Windows Client  
 
-## Status
-Phase 1 documentation in progress.
+### Network Segments
+
+| Network | Subnet | Purpose |
+|--------|--------|--------|
+| Server | 10.10.20.0/24 | Internal services |
+| Client | 10.10.30.0/24 | User devices |
+| DMZ | 10.10.40.0/24 | Public-facing services |
+| WAN | 192.168.x.x | External network |
+
+---
+
+## Key Features
+
+- Network segmentation using virtual bridges  
+- Centralized routing and NAT via pfSense  
+- SSH-based remote administration  
+- NGINX service deployment and validation  
+- Snapshot and backup strategy implementation  
+- VM templating and cloning  
+- Disk management using LVM  
+- Resource monitoring and stress testing  
+- Basic automation using Proxmox CLI  
+
+---
+
+## Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+- Architecture Design  
+- Network Design  
+- IP Addressing Plan  
+- VM Inventory  
+- Storage Design  
+- Backup and Recovery Strategy  
+- Snapshot and Template Strategy  
+- Security Model  
+- Troubleshooting Guide  
+- Operations Runbook  
+- Lab Setup Guide  
+- Lessons Learned  
+
+---
+
+## Project Structure
+
+```text
+docs/                  Core design and operational documentation
+phase-1-foundation/    Initial infrastructure build
+phase-2-active-directory/ Planned AD phase
+```
+
+
+---
+
+## Key Skills Demonstrated
+
+- Infrastructure design and virtualization  
+- Network segmentation and firewall configuration  
+- Linux system administration  
+- Troubleshooting across multiple layers  
+- Backup and disaster recovery  
+- Storage management and LVM  
+- Resource monitoring and performance tuning  
+- Automation using CLI tools  
+- Technical documentation  
+
+---
+
+## Real-World Scenarios Simulated
+
+- Service deployment and validation  
+- System failure and recovery  
+- Disk exhaustion and expansion  
+- VM cloning and scaling  
+- Network misconfiguration troubleshooting  
+- DNS and NAT-related issues  
+
+---
+
+## Future Phases
+
+Planned enhancements include:
+
+- Active Directory deployment (Windows Server)  
+- Centralized authentication and group policies  
+- Azure cloud integration  
+- Infrastructure as Code (Terraform)  
+- Containerization (Kubernetes)  
+- Monitoring and logging solutions  
+
+---
+
+## Summary
+
+This project demonstrates practical, real-world infrastructure engineering skills, including system design, troubleshooting, and operational management.
+
+It is structured to reflect enterprise environments and serves as a foundation for advanced topics in cloud, DevOps, and solution architecture.
