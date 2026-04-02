@@ -84,29 +84,11 @@ Detailed documentation is available in the `docs/` directory:
 
 ## Project Structure
 
-northwind-enterprise-lab/
-│
-├── README.md
-│
-├── docs/
-│ ├── architecture.md
-│ ├── network-design.md
-│ ├── ip-plan.md
-│ ├── vm-inventory.md
-│ ├── storage-design.md
-│ ├── backup-and-recovery.md
-│ ├── snapshot-and-template-strategy.md
-│ ├── security-model.md
-│ ├── troubleshooting-guide.md
-│ ├── operations-runbook.md
-│ ├── lab-setup-guide.md
-│ └── lessons-learned.md
-│
-├── phase-1-foundation/
-│ └── README.md
-│
-├── phase-2-active-directory/
-│ └── README.md
+```text
+docs/                  Core design and operational documentation
+phase-1-foundation/    Initial infrastructure build
+phase-2-active-directory/ Planned AD phase
+```
 
 
 ---
