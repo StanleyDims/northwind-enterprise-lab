@@ -43,13 +43,13 @@ graph LR
     pfSense <-->|Restricted DMZ traffic| DMZ1
 
     pfSense <-->|Outbound NAT / Replies| Internet
+```
 
 ### Core Components
 
 - Proxmox Bridges (virtual switches)
 - pfSense (firewall/router)
 - Virtual machines connected to segmented networks
-```
 
 ---
 
