@@ -19,6 +19,7 @@ This phase establishes the base upon which future phases (Active Directory, clou
 
 ## Architecture Diagram
 
+```mermaid
 graph TD
 
     Internet["Internet"]
@@ -52,6 +53,7 @@ graph TD
 
     WKS01 -->|HTTP / SSH| LX01
     pfSense -->|NAT| Internet
+```
 
 ---
 
@@ -97,6 +99,7 @@ graph TD
 - NAT configured for internet access  
 - DHCP configured per network 
 
+```mermaid
 graph LR
 
     Internet["Internet"]
@@ -122,6 +125,7 @@ graph LR
     pfSense <-->|Restricted DMZ traffic| DMZ1
 
     pfSense <-->|Outbound NAT / Replies| Internet
+```
 
 ---
 

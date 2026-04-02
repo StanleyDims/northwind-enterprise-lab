@@ -17,6 +17,7 @@ The network is designed to simulate a real-world enterprise environment with:
 
 The lab uses a virtualized network implemented in Proxmox using Linux bridges and pfSense.
 
+```mermaid
 graph LR
 
     Internet["Internet"]
@@ -48,6 +49,7 @@ graph LR
 - Proxmox Bridges (virtual switches)
 - pfSense (firewall/router)
 - Virtual machines connected to segmented networks
+```
 
 ---
 
