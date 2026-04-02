@@ -46,9 +46,9 @@ The setup simulates a real-world enterprise environment using:
 
 5. After installation:
    - Access web UI:
-     ```
+     
      https://<proxmox-ip>:8006
-     ``` id="lab_proxmox_url"
+     
 
 ---
 
@@ -159,7 +159,7 @@ Apply configuration and restart network if required.
 ip a
 ping 8.8.8.8
 ping google.com
-``` id="lab_linux_test"
+```
 
 ---
 
@@ -168,13 +168,13 @@ ping google.com
 ```bash
 sudo apt update
 sudo apt install nginx -y
-``` id="lab_nginx_install"
+```
 
 Verify:
 
 ```bash
 systemctl status nginx
-``` id="lab_nginx_status"
+```
 
 ---
 
@@ -253,7 +253,7 @@ From Windows:
 
 ```bash
 fallocate -l 5G bigfile
-``` id="lab_storage_test"
+```
 
 ---
 
@@ -270,7 +270,7 @@ fallocate -l 5G bigfile
 
 ```bash
 sudo apt install stress -y
-``` id="lab_stress_install"
+```
 
 ---
 
@@ -279,7 +279,7 @@ sudo apt install stress -y
 ```bash
 stress --cpu 2
 stress --vm 1 --vm-bytes 2G
-``` id="lab_stress_run"
+```
 
 ---
 
@@ -299,7 +299,7 @@ stress --vm 1 --vm-bytes 2G
 qm list
 qm snapshot <vmid> test
 qm rollback <vmid> test
-``` id="lab_cli"
+```
 
 ---
 

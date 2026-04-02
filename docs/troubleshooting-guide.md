@@ -49,19 +49,19 @@ A layered approach is used:
 Check netplan config:
 ```bash
 cat /etc/netplan/*.yaml
-``` id="tg_issue1_check"
+``` 
 
 Remove MAC binding:
 ```yaml
 ethernets:
   ens18:
     dhcp4: true
-``` id="tg_issue1_fix"
+``` 
 
 Apply configuration:
 ```bash
 sudo netplan apply
-``` id="tg_issue1_apply"
+``` 
 
 ---
 
@@ -85,12 +85,12 @@ sudo netplan apply
 Bring interface up:
 ```bash
 sudo ip link set ens18 up
-``` id="tg_issue2_fix"
+``` 
 
 Apply network config:
 ```bash
 sudo netplan apply
-``` id="tg_issue2_apply"
+``` 
 
 ---
 
@@ -115,11 +115,10 @@ sudo netplan apply
 Check routing:
 ```bash
 ip route
-``` id="tg_issue3_route"
+``` 
 
 Expected:
 default via 10.10.20.1
-
 
 
 Check pfSense:
@@ -153,7 +152,7 @@ Test pfSense connectivity:
 Check:
 ```bash
 cat /etc/resolv.conf
-``` id="tg_issue4_dns"
+``` 
 
 ---
 
@@ -205,7 +204,7 @@ Force refresh:
 ```bash
 sudo netplan apply
 sudo systemctl restart systemd-networkd
-``` id="tg_issue6_fix"
+``` 
 
 ---
 
@@ -251,17 +250,17 @@ sudo systemctl restart systemd-networkd
 Check service:
 ```bash
 systemctl status nginx
-``` id="tg_issue8_status"
+``` 
 
 Restart:
 ```bash
 sudo systemctl restart nginx
-``` id="tg_issue8_restart"
+``` 
 
 Test locally:
 ```bash
 curl http://localhost
-``` id="tg_issue8_local"
+``` 
 
 Test from client:
 - Browser → http://<server-ip>  
@@ -289,7 +288,7 @@ Test from client:
 Check usage:
 ```bash
 df -h
-``` id="tg_issue9_check"
+``` 
 
 Free space or extend disk:
 - Resize in Proxmox  
@@ -361,7 +360,7 @@ From Linux VM:
 ```bash
 ping 8.8.8.8
 ping google.com
-``` id="tg_issue10_test"
+``` 
 
 Expected:
 
@@ -422,7 +421,7 @@ ip a
 ip route
 ping 8.8.8.8
 ping google.com
-``` id="tg_general_network"
+```
 
 ---
 
@@ -431,7 +430,7 @@ ping google.com
 ```bash
 systemctl status <service>
 systemctl restart <service>
-``` id="tg_general_services"
+``` 
 
 ---
 
@@ -440,7 +439,7 @@ systemctl restart <service>
 ```bash
 df -h
 lsblk
-``` id="tg_general_disk"
+```
 
 ---
 
@@ -449,7 +448,7 @@ lsblk
 ```bash
 top
 htop
-``` id="tg_general_process"
+``` 
 
 ---
 

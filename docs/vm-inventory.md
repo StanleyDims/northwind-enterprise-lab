@@ -190,6 +190,7 @@ The VM environment supports the following scenarios:
 | No internet access | NAT / routing delay | Verified pfSense and routing |
 | Interface down | Network not initialized | Brought interface up |
 | DNS delay | Initial lookup latency | Verified resolver |
+| Same Macine id after restoring | unchecked unique box while restoring VM | Check unique box before restore |
 
 ---
 

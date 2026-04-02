@@ -68,12 +68,12 @@ auto-snap-2026-03-30
 #### CLI
 ```bash
 qm snapshot <vmid> <snapshot-name>
-``` id="snap_cli"
+```
 
 Example:
 ```bash
 qm snapshot 104 before-change
-``` id="snap_cli_ex"
+```
 
 ---
 
@@ -85,7 +85,7 @@ qm snapshot 104 before-change
 #### CLI
 ```bash
 qm rollback <vmid> <snapshot-name>
-``` id="snap_rollback"
+```
 
 ---
 
@@ -115,17 +115,17 @@ Before converting a VM to a template:
 1. Update system:
 ```bash
 sudo apt update && sudo apt upgrade -y
-``` id="tpl_update"
+```
 
 2. Clean cache:
 ```bash
 sudo apt clean
-``` id="tpl_clean"
+```
 
 3. (Optional) Reset machine ID:
 ```bash
 sudo truncate -s 0 /etc/machine-id
-``` id="tpl_machine_id"
+```
 
 4. Ensure:
 - SSH installed and enabled  
@@ -180,7 +180,7 @@ After cloning, verify:
 3. Hostname update:
 ```bash
 sudo hostnamectl set-hostname <new-name>
-``` id="tpl_hostname"
+```
 
 ---
 

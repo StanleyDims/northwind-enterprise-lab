@@ -250,7 +250,7 @@ Datacenter → Permissions → Add → User Permission
 
 ---
 
-Security Checks
+## Security Checks
 Ensure firewall enabled (Datacenter and Node)
 Verify access rules
 Avoid using root account for daily tasks
@@ -259,13 +259,15 @@ Avoid using root account for daily tasks
 
 Automation
 
-Snapshot Script Example
+Snapshot Script Example:
+
+```bash
 #!/bin/bash
 
 for vm in 102 103 104
 do
   qm snapshot $vm auto-snap-$(date +%F)
-done
+```
 
 ---
 

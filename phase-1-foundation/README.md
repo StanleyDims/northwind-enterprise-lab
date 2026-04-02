@@ -20,39 +20,44 @@ This phase establishes the base upon which future phases (Active Directory, clou
 ## Architecture Diagram
 
 ```mermaid
-graph TD
+graph TB
 
     Internet["Internet"]
 
     subgraph Proxmox["Proxmox VE Host"]
 
-        pfSense["pfSense Firewall / Router<br/>WAN: vmbr0<br/>LAN: vmbr1<br/>CLIENT: vmbr2<br/>DMZ: vmbr3"]
+        FW01["100 (FW01)<br/>pfSense Firewall / Router<br/>WAN: vmbr0<br/>LAN: vmbr1<br/>CLIENT: vmbr2<br/>DMZ: vmbr3"]
 
         subgraph ServerNet["Server Network (10.10.20.0/24)"]
-            LX01["NW-LX01<br/>Ubuntu + NGINX"]
-            LX02["NW-LX02<br/>Cloned Server"]
-            LXRESTORE["NW-LX03-RESTORE<br/>Recovered VM"]
+            LX02["104 (NW-LX02-CLONED)<br/>Ubuntu Server"]
+            LX03["103 (NW-LX03-RESTORE)<br/>Recovered VM"]
         end
 
         subgraph ClientNet["Client Network (10.10.30.0/24)"]
-            WKS01["NW-WKS01<br/>Windows Client"]
+            WKS01["101 (NW-WKS01)<br/>Windows Client"]
         end
 
         subgraph DMZNet["DMZ Network (10.10.40.0/24)"]
             DMZ1["Future DMZ Services"]
         end
+
+        TEMPLATE["102 (NW-LX01TEMPLATE)<br/>Ubuntu Template"]
     end
 
-    Internet -->|WAN| pfSense
+    Internet -->|WAN| FW01
 
-    pfSense -->|LAN| LX01TEMPLATE
-    pfSense -->|LAN| LX02CLONED
-    pfSense -->|LAN| LX03RESTORE
-    pfSense -->|CLIENT| WKS01
-    pfSense -->|DMZ| DMZ1
+    FW01 -->|LAN| LX02
+    FW01 -->|LAN| LX03
+    FW01 -->|CLIENT| WKS01
+    FW01 -->|DMZ| DMZ1
 
-    WKS01 -->|HTTP / SSH| LX01
-    pfSense -->|NAT| Internet
+    WKS01 -->|HTTP / SSH| LX02
+    WKS01 -->|HTTP / SSH| LX03
+
+    FW01 -->|NAT| Internet
+
+    TEMPLATE -. Clone source .-> LX02
+    TEMPLATE -. Recovery / standard build reference .-> LX03
 ```
 
 ---

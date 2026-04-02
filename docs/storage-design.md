@@ -185,38 +185,50 @@ After resizing in Proxmox:
 1. Verify disk size:
 ```bash
 lsblk
+```
 
 2. Extend partition:
+```bash
 sudo growpart /dev/sda 3
+```
 
 3. Resize physical volume:
+```bash
 sudo pvresize /dev/sda3
-
-4. sudo pvresize /dev/sda3
 sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+```
 
-5. Resize filesysyem:
+4. Resize filesysyem:
+```bash
 sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
-
+```
 
 ## Disk Usage Monitoring
 
 Check usage:
+```bash
 df -h
+```
 
 Check block devices:
+```bash
 lsblk
+```
 
 
 ## Disk Exhaustion Simulation
 
 To simulate low disk space:
+```bash
 fallocate -l 5G bigfile
 fallocate -l 10G bigfile2
+```
 
 
 Verify:
+```bash
 df -h
+```
 
 ---
 
@@ -228,23 +240,23 @@ rm bigfile bigfile2
 ---
 
 
-Real-World Scenario
+## Real-World Scenario
 
-Problem:
+## Problem:
 
 Server disk becomes full
 Applications fail or crash
 
-Resolution:
+## Resolution:
 
 Identify disk usage
 Expand disk in hypervisor
 Extend LVM and filesystem
 Restore service
 
+---
 
-
-Storage Validation
+## Storage Validation
 
 The following were tested:
 
@@ -253,16 +265,17 @@ Disk expansion at hypervisor level
 LVM resizing inside Linux
 Disk exhaustion and recovery
 
+---
 
-
-Limitations
+## Limitations
 
 Single storage backend (no redundancy)
 No RAID or distributed storage
 No external storage integration
 
+---
 
-Future Improvements
+## Future Improvements
 
 Add additional storage pools
 Implement RAID or ZFS
@@ -278,8 +291,7 @@ Simulate real-world storage failures
 
 ---
 
-
-Summary
+## Summary
 
 The storage design provides:
 

@@ -115,8 +115,7 @@ After restoring:
 Example:
 ```bash
 systemctl status nginx
-``` id="restore_check"
-
+```
 ---
 
 ## Recovery Scenarios
