@@ -1,215 +1,236 @@
-# Architecture Overview — Northwind Enterprise Lab
+# Architecture Overview
 
 ## Overview
 
-This lab simulates a real-world hybrid enterprise infrastructure for a mid-sized organization (Northwind Digital Services Ltd).
+The Northwind Enterprise Lab simulates a mid-sized organisation with a hybrid infrastructure combining on-premises systems and future cloud integration.
 
-The environment is designed to reflect:
-
-- On-premises infrastructure  
-- Network segmentation and security  
-- Remote administration workflows  
-- Service hosting and troubleshooting  
-- Backup, recovery, and operational resilience  
-
-The architecture is built on Proxmox VE, with a virtualized network controlled by pfSense, and multiple VMs representing servers and clients.
+The environment is designed to reflect real-world enterprise architecture, including identity management, network segmentation, policy enforcement, and controlled access to resources.
 
 ---
 
-## Core Components
+## Architecture Layers
 
-### Virtualization Layer
-- Platform: Proxmox VE  
-- Storage:
-  - local → ISO images, backups  
-  - local-lvm → VM disks (thin provisioned)  
+The lab is structured into logical layers:
 
-Capabilities:
-- VM lifecycle management  
-- Snapshots  
-- Backup scheduling  
-- Resource allocation  
+- Virtualization Layer (Proxmox)
+- Network Layer (pfSense + segmented networks)
+- Identity Layer (Active Directory)
+- Policy & Access Layer (Group Policy + RBAC)
+- File Services Layer (centralised storage)
 
 ---
 
-### Network and Security Layer
-- Firewall: pfSense  
+## Phase 1 – Infrastructure Foundation
 
-Responsibilities:
-- Routing between networks  
-- NAT (internal to internet)  
-- DHCP per network  
-- Firewall rule enforcement  
+Phase 1 established the core infrastructure:
 
----
+- Proxmox hypervisor deployed
+- Virtual networking configured using bridges
+- pfSense firewall/router implemented
+- Network segmentation introduced:
 
-## Network Design
-
-| Network | Subnet | Purpose |
+| Network | Purpose | Subnet |
 |--------|--------|--------|
-| Server | 10.10.20.0/24 | Internal servers |
-| Client | 10.10.30.0/24 | User devices |
-| DMZ | 10.10.40.0/24 | Public-facing services |
-| WAN | 192.168.x.x | External network |
+| Management | Admin access | 10.10.10.0/24 |
+| Server | Internal services | 10.10.20.0/24 |
+| Client | End-user devices | 10.10.30.0/24 |
+| DMZ | Application exposure | 10.10.40.0/24 |
+
+This phase provided the foundation for all higher-level services.
 
 ---
 
-## Traffic Flow
+## Phase 2 – Identity, Policy & Access
 
-### Internal communication
-Client → pfSense → Server
+Phase 2 introduced centralised identity management and policy enforcement.
 
-### Internet access
-Server/Client → pfSense (NAT) → Internet
+### Active Directory
 
-### Service access
-Client → NGINX (Linux Server)
+- Domain: `northwind.local`
+- Domain Controller: `NW-DC01`
+- Services:
+  - Active Directory Domain Services
+  - DNS (AD-integrated)
+
+Active Directory provides:
+- Centralised authentication
+- Authorisation
+- Directory services
+- Internal DNS resolution
+
+```mermaid
+graph LR
+
+    Users["Users<br/>(Domain Users)"]
+
+    AD["Active Directory<br/>NW-DC01<br/>Identity & Authentication"]
+
+    GPO["Group Policy<br/>Centralized Policy Enforcement"]
+
+    FS["File Server<br/>NW-FS01<br/>Shared Resources"]
+
+    Users -->|"Logon / Authentication"| AD
+
+    AD -->|"Applies Policies"| GPO
+
+    GPO -->|"Controls Access & Environment"| Users
+
+    Users -->|"Access via Groups (RBAC)"| FS
+
+    AD -->|"Authorisation via Groups"| FS
+```
+
+---
+
+### Organisational Structure
+
+A structured OU hierarchy was implemented to reflect departmental organisation:
+
+- Northwind Users
+  - IT, HR, Finance, Engineering, Support
+- Northwind Computers
+  - Workstations, Servers
+- Northwind Groups
+- Service Accounts
+
+---
+
+### Identity and Access Control
+
+Role-Based Access Control (RBAC) is used throughout the environment:
+Users → Groups → Permissions
+
+
+- Users are assigned to security groups
+- Groups are assigned permissions to resources
+- No direct user-to-resource permissions are used
+
+---
+
+### Group Policy
+
+A modular Group Policy design was implemented:
+
+| GPO | Purpose |
+|-----|--------|
+| NW-Security-Baseline | Password and lockout policy |
+| NW-HR-Restrictions | Control Panel restriction |
+| NW-RDP-Restrictions | Admin-only RDP access |
+| NW-App-Control | Restrict application execution |
+| NW-Drive-Mapping | Map network drives |
+
+Policies are applied based on OU structure and user roles.
+
+---
+
+### File Services
+
+A dedicated file server (`NW-FS01`) provides centralised storage:
+
+- Base path: `C:\Shares`
+- Departmental shares:
+  - `\\NW-FS01\Finance`
+  - `\\NW-FS01\HR`
+  - `\\NW-FS01\Shared`
+  - `\\NW-FS01\IT-Admin`
+
+Access is controlled using security groups and enforced via NTFS and share permissions.
+
+---
+
+### DNS and DHCP Integration
+
+A key architectural component is the separation of DHCP and DNS responsibilities:
+
+- DHCP: pfSense
+- DNS: Domain Controller (`NW-DC01`)
+
+### Final DNS Flow
+Client → Domain Controller (DNS) → pfSense → Internet
+
+
+### Design Rationale
+
+- Clients must use the Domain Controller for DNS to locate Active Directory services
+- The Domain Controller forwards external queries to pfSense or upstream resolvers
+- DHCP distributes DNS configuration automatically to clients
+
+This ensures:
+- Reliable domain resolution
+- Successful authentication
+- Proper Group Policy application
+
+---
+
+## Network Communication Flow
+
+### Internal Communication
+Client Network (10.10.30.0/24)
+↓
+pfSense (Routing + Firewall)
+↓
+Server Network (10.10.20.0/24)
+↓
+Domain Controller / File Server
+
+
+### External Communication
+Client → Domain Controller → pfSense → Internet
+
 
 ---
 
 ## Virtual Machines
 
-| VM Name | Role | Network |
-|--------|------|--------|
-| NW-LX01 | Linux Server (NGINX) | Server |
-| NW-WKS01 | Windows Client | Client |
-| NW-LX02 | Cloned Linux Server | Server |
-| pfSense | Firewall/Router | WAN + all internal |
+| VM Name | Role |
+|--------|------|
+| NW-DC01 | Domain Controller (AD DS, DNS) |
+| NW-FS01 | File Server |
+| NW-WKS01 | Domain-joined Client |
+| pfSense | Firewall, Router, DHCP |
 
 ---
 
-## Access Model
+## Key Design Principles
 
-| Access Type | Method |
-|------------|--------|
-| Linux administration | SSH |
-| Windows administration | RDP (future) |
-| Hypervisor | Proxmox Web UI |
-| Firewall | pfSense Web UI |
-
-Console access is only used for recovery scenarios.
+### Network Segmentation
+- Separation of management, server, client, and DMZ networks
+- Controlled inter-network routing via pfSense
 
 ---
 
-## Service Layer
-
-### NGINX (Linux Server)
-Used to simulate:
-- Web service hosting  
-- Application availability  
-- Troubleshooting scenarios  
+### Centralised Identity
+- Active Directory used as the single source of truth
+- Domain-based authentication across systems
 
 ---
 
-## Storage Design
-
-- Thin provisioning on local-lvm  
-- Dynamic disk expansion supported  
-- LVM used inside Linux VM for flexibility  
-
-Capabilities:
-- Resize disk at hypervisor level  
-- Extend filesystem without downtime  
+### Least Privilege
+- Access granted via security groups
+- Administrative rights restricted to IT_Admins
 
 ---
 
-## Resource Management
-
-Monitored via:
-- Proxmox dashboard  
-- Linux tools (top, htop, stress)  
-
-Test scenarios:
-- CPU saturation  
-- Memory pressure  
-- Disk I/O stress  
+### Policy Enforcement
+- Group Policy used to standardise configuration
+- Role-based restrictions applied
 
 ---
 
-## Backup and Recovery Strategy
+### Separation of Responsibilities
 
-### Snapshots
-- Used for short-term rollback  
-- Taken before system changes  
-
-### Backups
-- Scheduled via Proxmox backup jobs  
-- Stored on local storage  
-- Compressed using zstd  
-
-### Recovery Tested
-- Full VM restore to new instance  
-- Service validation post-restore (NGINX)  
+| Component | Responsibility |
+|----------|---------------|
+| pfSense | Routing, firewall, DHCP |
+| Domain Controller | Identity, authentication, DNS |
+| File Server | Storage and access control |
 
 ---
 
-## High Availability Simulation
+## Summary
 
-### Migration (planned)
-- Service moved from primary VM to cloned VM  
+The architecture combines network segmentation, centralised identity, and policy-driven control to simulate a realistic enterprise environment.
 
-### Failover (unplanned)
-- Primary VM stopped  
-- Backup VM used to restore service  
+Phase 1 established the infrastructure foundation, while Phase 2 introduced identity, access control, and operational policies.
 
-Limitations:
-- Manual failover (no load balancer yet)  
-
----
-
-## Security Model
-
-### Network Security
-- Segmented networks (Server, Client, DMZ)  
-- Firewall rules enforced via pfSense  
-
-### Host Security
-- Proxmox RBAC (non-root user)  
-- Firewall enabled at node level  
-
-### Access Control
-- SSH for Linux  
-- Controlled administrative access  
-
----
-
-## Automation
-
-Using Proxmox CLI:
-
-- VM listing (qm list)  
-- Snapshot creation (qm snapshot)  
-- Batch operations via scripts  
-
----
-
-## Monitoring and Observability (Basic)
-
-- System metrics via Proxmox  
-- Process monitoring via Linux tools  
-- Manual health checks (NGINX availability)  
-
----
-
-## Scalability and Future Design
-
-Planned enhancements:
-
-- Active Directory (Phase 2)  
-- Azure integration  
-- Terraform automation  
-- Kubernetes workloads  
-- Centralized logging  
-
----
-
-## Key Skills Demonstrated
-
-- Network segmentation  
-- Firewall configuration (pfSense)  
-- Linux administration (NGINX, SSH)  
-- VM lifecycle management  
-- Backup and recovery  
-- Troubleshooting (DNS, routing, DHCP)  
-- Resource optimization  
-- Infrastructure automation basics  
+This layered approach reflects real-world enterprise design and provides a scalable base for future phases such as cloud integration, automation, and containerised workloads.

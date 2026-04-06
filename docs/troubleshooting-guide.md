@@ -348,7 +348,7 @@ Steps:
 - pfSense forwards DNS queries to upstream DNS servers  
 - Instead of performing full recursive resolution  
 
-Flow:
+## Flow:
 VM → pfSense → Upstream DNS (router or public DNS)
 
 ---
@@ -371,14 +371,14 @@ DNS resolution works
 ---
 
 
-Lesson
+## Lesson
 
 Recursive DNS requires proper internet routing
 In NAT or home lab environments, forwarding mode is more reliable
 Always consider upstream network topology
 
 
-Additional Insight
+## Additional Insight
 
 In enterprise environments:
 
@@ -452,12 +452,339 @@ htop
 
 ---
 
-## Key Principles
+## Issue 12: Domain DNS Lookup Failed From Client
 
+### Symptoms
+- `nslookup northwind.local` fails on the Windows client  
+- Domain join cannot proceed  
+- Client can obtain an IP address, but cannot locate the domain  
+
+### Root Cause
+- The client was using pfSense as its DNS server  
+- pfSense did not host the AD-integrated DNS zone for `northwind.local`  
+
+### Resolution
+
+#### Check client DNS settings
+```powershell
+ipconfig /all
+```
+
+Initially, the client received:
+
+```text
+DNS Server: 10.10.30.1
+```
+
+This was corrected by updating the pfSense DHCP scope for the client network so that DHCP handed out the Domain Controller as DNS.
+
+Correct design:
+
+```text
+DNS Server: 10.10.20.102
+```
+
+#### Renew lease on client
+```powershell
+ipconfig /release
+ipconfig /renew
+```
+
+#### Retest
+```powershell
+nslookup northwind.local
+```
+
+### Lesson
+- In Active Directory environments, clients must use the Domain Controller as DNS  
+- DHCP should distribute the correct DNS settings automatically  
+
+---
+
+## Issue 13: DNS Timeout Even After Client Pointed to DC
+
+### Symptoms
+- Client DNS server changed to the Domain Controller  
+- `nslookup northwind.local` still times out  
+- Client cannot resolve the domain  
+
+### Root Cause
+- DNS was no longer the logical design issue  
+- The real issue was network connectivity between subnets and incorrect server-side configuration  
+
+### Resolution
+
+#### Validate connectivity first
+```powershell
+ping 10.10.20.102
+```
+
+Once connectivity troubleshooting began, a server-side IP configuration issue was discovered and corrected.
+
+### Lesson
+- If a client points to the correct DNS server but still times out, test network reachability before assuming a DNS service failure  
+- DNS problems are often routing or host configuration problems in disguise  
+
+---
+
+## Issue 14: Wrong Subnet Mask on Domain Controller
+
+### Symptoms
+- Client could not reliably reach the Domain Controller  
+- DNS queries timed out  
+- Cross-subnet communication was inconsistent or failed  
+
+### Root Cause
+The Domain Controller NIC had an incorrect subnet mask configured:
+
+```text
+225.0.0.0
+```
+
+Correct mask should have been:
+
+```text
+255.255.255.0
+```
+
+### Resolution
+
+#### Update the NIC configuration on `NW-DC01`
+```text
+IP Address:      10.10.20.102
+Subnet Mask:     255.255.255.0
+Default Gateway: 10.10.20.1
+Preferred DNS:   10.10.20.102
+```
+
+#### Validate
+```powershell
+ipconfig
+ping 10.10.30.100
+```
+
+#### Retest from client
+```powershell
+ping 10.10.20.102
+nslookup northwind.local
+```
+
+### Lesson
+- A single incorrect subnet mask can break routing, DNS, and domain operations  
+- Always validate basic IP configuration before deeper troubleshooting  
+
+---
+
+## Issue 15: Client Could Ping DC, but DC Could Not Ping Client
+
+### Symptoms
+- Client could ping the Domain Controller successfully  
+- Domain DNS resolution worked from the client  
+- Domain join succeeded  
+- Ping from DC to client timed out  
+
+### Root Cause
+- This was not a routing failure  
+- The Windows client was most likely blocking inbound ICMP echo requests via host firewall  
+
+### Resolution
+Since client → DC communication and domain operations worked, the issue was classified as host firewall behavior, not network failure.
+
+#### Optional validation on the Windows client
+```powershell
+Enable-NetFirewallRule -DisplayGroup "File and Printer Sharing"
+```
+
+### Lesson
+- Asymmetric ping does not always mean broken routing  
+- Host firewalls can block inbound ICMP while allowing normal business traffic  
+
+---
+
+## Issue 16: Domain Join Dependency on DNS
+
+### Symptoms
+- Domain join failed until DNS was corrected  
+- Client had valid IP and gateway but could not join `northwind.local`  
+
+### Root Cause
+- Active Directory depends on DNS service discovery  
+- The client must resolve AD records hosted on the Domain Controller  
+
+### Resolution
+After DHCP was updated to hand out the DC as DNS, and DC connectivity was restored, domain join completed successfully.
+
+#### Validation steps
+```powershell
+nslookup northwind.local
+ping 10.10.20.102
+```
+
+Then join domain:
+
+```text
+System Properties → Change settings → Domain → northwind.local
+```
+
+### Lesson
+- Domain join is a DNS-dependent process  
+- In AD environments, correct DNS is not optional  
+
+---
+
+## Issue 17: UNC Path vs Folder Path Confusion for File Shares
+
+### Symptoms
+Uncertainty over whether drive mapping should use:
+
+```text
+\\NW-FS01\Finance
+```
+
+or
+
+```text
+\\NW-FS01\Shares\Finance
+```
+
+### Root Cause
+Confusion between:
+- the underlying folder path on disk  
+- the published SMB share name  
+
+### Resolution
+Use the share name, not the physical folder path.
+
+#### Example
+Folder path on server:
+
+```text
+C:\Shares\Finance
+```
+
+Share name:
+
+```text
+Finance
+```
+
+Correct UNC path:
+
+```text
+\\NW-FS01\Finance
+```
+
+#### Validation
+```powershell
+Get-SmbShare
+```
+
+### Lesson
+- Users and GPOs access SMB shares through UNC paths based on the share name  
+- The underlying disk path is not used directly by clients  
+
+---
+
+## Issue 18: Drive Mapping and File Access Validation
+
+### Symptoms
+Need to confirm mapped drives and file access are functioning correctly for the right users.
+
+### Root Cause
+File access depends on multiple layers:
+- group membership  
+- share permissions  
+- NTFS permissions  
+- successful GPO application  
+
+### Resolution
+
+Validate in this order:
+
+1. Confirm user is in correct AD security group  
+2. Confirm GPO applied:
+   ```powershell
+   gpresult /r
+   ```
+3. Confirm mapped drive appears after logon or after:
+   ```powershell
+   gpupdate /force
+   ```
+4. Test manual access:
+   ```text
+   \\NW-FS01\Finance
+   ```
+
+### Lesson
+- File access issues are rarely caused by one setting alone  
+- Validate identity, policy, and permissions together  
+
+---
+
+## General Troubleshooting Commands
+
+### Network
+
+#### Linux
+```bash
+ip a
+ip route
+ping 8.8.8.8
+ping google.com
+```
+
+#### Windows
+```powershell
+ipconfig
+ipconfig /all
+ping 10.10.20.102
+nslookup northwind.local
+nslookup google.com
+tracert 10.10.20.102
+```
+
+### Active Directory / GPO
+```powershell
+Get-ADUser -Filter *
+Get-ADGroup -Filter *
+gpupdate /force
+gpresult /r
+gpresult /h C:\temp\gpo-report.html
+```
+
+### Services
+
+#### Linux
+```bash
+systemctl status <service>
+systemctl restart <service>
+```
+
+#### Windows
+```powershell
+Get-Service dns
+Get-Service netlogon
+```
+
+### Disk
+```bash
+df -h
+lsblk
+```
+
+### Processes
+```bash
+top
+htop
+```
+
+---
+
+## Key Principles
 - Troubleshoot layer by layer  
 - Do not assume root cause  
 - Validate each component independently  
-- Separate network, DNS, and service issues  
+- Separate network, DNS, service, and identity issues  
 - Always verify after changes  
 
 ---
@@ -466,10 +793,15 @@ htop
 
 This troubleshooting guide reflects real issues encountered and resolved during the lab setup.
 
-It demonstrates:
+### Phase 1 demonstrated troubleshooting across:
+- Linux networking  
+- pfSense NAT / DNS behavior  
+- cloning and restore operations  
 
-- Structured problem-solving  
-- Understanding of system layers  
-- Ability to diagnose and resolve infrastructure issues  
+### Phase 2 extends this with:
+- Active Directory DNS dependency  
+- domain join troubleshooting  
+- subnet misconfiguration diagnosis  
+- file access and GPO validation  
 
-This aligns with real-world operational and support scenarios.
+Together, these scenarios demonstrate structured problem-solving and practical infrastructure troubleshooting aligned with real-world operational support.

@@ -25,9 +25,11 @@ This inventory is used for:
 |------|------|------|----|--------|-----------|--------|
 | 100 | pfSense | Firewall / Router | pfSense | WAN + Server + Client + DMZ | Multiple | Running |
 | 102 | NW-LX01 (Template) | Linux Server Template | Ubuntu Server | Server | N/A | Template |
-| 103 | NW-LX01-RESTORE | Restored Linux Server | Ubuntu Server | Server | DHCP | Running |
+| 103 | NW-LX03 | Restored Linux Server | Ubuntu Server | Server | DHCP | Running |
 | 104 | NW-LX02 | Cloned Linux Server | Ubuntu Server | Server | DHCP | Running |
-| 105 | NW-WKS01 | Windows Client | Windows | Client | DHCP | Running |
+| 105 | NW-WKS01 | Windows Client (Domain Joined) | Windows | Client | DHCP | Running |
+| 106 | NW-DC01 | Domain Controller (AD DS + DNS) | Windows Server | Server | Static | Running |
+| 107 | NW-FS01 | File Server (SMB Shares) | Windows Server | Server | Static | Running |
 
 ---
 
@@ -41,14 +43,14 @@ Firewall, router, and network control layer
 **Responsibilities:**
 - Routing between networks  
 - NAT (internal to internet)  
-- DHCP services  
+- DHCP services (Client network)  
 - Firewall enforcement  
 
 **Interfaces:**
 - WAN → vmbr0  
-- LAN (Server) → vmbr1  
-- OPT1 (Client) → vmbr2  
-- OPT2 (DMZ) → vmbr3  
+- Server → vmbr1  
+- Client → vmbr2  
+- DMZ → vmbr3  
 
 ---
 
@@ -74,7 +76,7 @@ Ubuntu Server LTS
 
 ---
 
-### NW-LX01-RESTORE (VM ID: 103)
+### NW-LX03 (VM ID: 103)
 
 **Role:**  
 Restored backup instance
@@ -126,11 +128,61 @@ Windows
 
 **Purpose:**
 - Simulate user device  
-- Test access to servers and services  
+- Test domain authentication  
+- Validate GPO and access control  
 
-**Tools Used:**
-- MobaXterm (SSH client)  
-- Web browser (NGINX access)  
+**Key Functions:**
+- Domain joined to `northwind.local`  
+- Receives Group Policy  
+- Accesses file shares via mapped drives  
+
+---
+
+### NW-DC01 (VM ID: 106) 
+
+**Role:**  
+Domain Controller
+
+**OS:**  
+Windows Server
+
+**Services:**
+- Active Directory Domain Services (AD DS)  
+- DNS (AD-integrated)  
+
+**Responsibilities:**
+- Centralized authentication  
+- Identity management  
+- DNS resolution for internal domain  
+
+**Configuration:**
+- Static IP assigned  
+- DNS points to itself  
+- Domain: `northwind.local`  
+
+---
+
+### NW-FS01 (VM ID: 107) 
+
+**Role:**  
+File Server
+
+**OS:**  
+Windows Server
+
+**Services:**
+- SMB file shares  
+
+**Responsibilities:**
+- Centralized file storage  
+- Department-based access control  
+
+**Shares:**
+- `\\NW-FS01\Finance`  
+- `\\NW-FS01\HR`  
+
+**Access Model:**
+- Controlled via AD security groups  
 
 ---
 
@@ -139,7 +191,8 @@ Windows
 | VM Name | Network | Subnet |
 |--------|--------|--------|
 | pfSense | All | Multiple |
-| NW-LX01 / LX02 / RESTORE | Server | 10.10.20.0/24 |
+| NW-DC01 / NW-FS01 | Server | 10.10.20.0/24 |
+| NW-LX02 / NW-LX03 | Server | 10.10.20.0/24 |
 | NW-WKS01 | Client | 10.10.30.0/24 |
 
 ---
@@ -148,10 +201,12 @@ Windows
 
 | Service | VM | Purpose |
 |--------|----|--------|
-| NGINX | NW-LX01 / LX02 / RESTORE | Web service simulation |
+| AD DS | NW-DC01 | Identity management |
+| DNS | NW-DC01 | Internal name resolution |
+| DHCP | pfSense | IP assignment (Client network) |
+| SMB | NW-FS01 | File sharing |
+| NGINX | Linux VMs | Web service simulation |
 | SSH | Linux VMs | Remote administration |
-| DHCP | pfSense | IP assignment |
-| DNS | pfSense | Name resolution |
 | NAT | pfSense | Internet access |
 
 ---
@@ -160,12 +215,13 @@ Windows
 
 The VM environment supports the following scenarios:
 
-- Remote administration via SSH  
-- Service deployment and validation (NGINX)  
-- Backup and restore testing  
+- Domain authentication and login  
+- Group Policy enforcement  
+- File access via group-based permissions  
+- Remote administration (SSH / RDP)  
+- Backup and restore validation  
 - VM cloning and scaling  
-- Network troubleshooting  
-- Migration and failover simulation  
+- Network and DNS troubleshooting  
 
 ---
 
@@ -189,8 +245,9 @@ The VM environment supports the following scenarios:
 | No IP after cloning | MAC mismatch in netplan | Updated or removed MAC binding |
 | No internet access | NAT / routing delay | Verified pfSense and routing |
 | Interface down | Network not initialized | Brought interface up |
-| DNS delay | Initial lookup latency | Verified resolver |
-| Same Macine id after restoring | unchecked unique box while restoring VM | Check unique box before restore |
+| DNS timeout from client | DNS pointing to pfSense | Updated DHCP to use DC as DNS |
+| Wrong subnet mask | Misconfiguration | Corrected to 255.255.255.0 |
+| Same machine ID after restore | Unique option not selected | Enabled unique option during restore |
 
 ---
 
@@ -198,32 +255,27 @@ The VM environment supports the following scenarios:
 
 - Separate roles across VMs  
 - Use templates for consistency  
+- Centralize identity and access  
+- Enforce least privilege  
 - Validate recovery processes  
 - Maintain clear naming conventions  
-- Align infrastructure with real-world scenarios  
-
----
-
-## Future Additions
-
-Planned VMs for next phases:
-
-- NW-DC01 → Domain Controller  
-- NW-FS01 → File Server  
-- Additional application servers  
-- Monitoring/logging server  
+- Align infrastructure with real-world enterprise design  
 
 ---
 
 ## Summary
 
-This VM inventory represents a structured and scalable environment that simulates enterprise infrastructure.
+This VM inventory represents a structured and evolving environment that simulates enterprise infrastructure.
 
-It demonstrates:
-- Deployment  
-- Management  
-- Recovery  
-- Troubleshooting  
-- Scaling  
+Phase 1 established:
+- Network segmentation  
+- Firewall control  
+- Virtualization foundation  
 
-and forms the foundation for further phases such as Active Directory and cloud integration.
+Phase 2 extends the environment with:
+- Active Directory  
+- Centralized authentication  
+- File services  
+- Policy-based management  
+
+Together, they demonstrate a layered and scalable infrastructure design aligned with real-world enterprise environments.

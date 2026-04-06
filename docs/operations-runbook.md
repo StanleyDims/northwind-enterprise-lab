@@ -17,12 +17,14 @@ The runbook focuses on repeatable actions and commands required to operate the e
 
 ## Environment Summary
 
-Core components:
+### Core components:
 
 - Proxmox VE (virtualization platform)  
-- pfSense (firewall and router)  
+- pfSense (firewall, router, DHCP)  
+- Active Directory Domain Controller (NW-DC01)  
+- File Server (NW-FS01)  
 - Linux servers (Ubuntu with NGINX)  
-- Windows client VM  
+- Windows domain-joined client  
 
 ---
 
@@ -31,7 +33,9 @@ Core components:
 | System | Access Method |
 |------|-------------|
 | Linux VMs | SSH |
-| Windows VM | Console / RDP (future) |
+| Windows Client | Domain Login / RDP |
+| Domain Controller | Console / RDP |
+| File Server | Console / RDP |
 | Proxmox | Web UI (port 8006) |
 | pfSense | Web UI |
 
@@ -43,257 +47,299 @@ Core components:
 
 ```bash
 qm list
-
+```
 Verify:
 
 All required VMs are running
 
----
+## Check System Resources
 
-Check System Resources
-
-On Proxmox:
-
+## Proxmox:
 CPU usage
 Memory usage
 Disk usage
 
-On Linux VM:
+## Linux VM:
+```bash
 top
-
-
-Check Disk Usage:
 df -h
+```
 
----
+## Check Domain Services (NEW)
 
-Service Management
+On NW-DC01:
+```powershell
+Get-Service adws, dns
+```
 
-Check NGINX Status:
+Verify:
+
+Active Directory services running
+DNS service running
+
+## Service Management
+
+## Linux (NGINX)
+```bash
 systemctl status nginx
-
-
-Restart NGINX
 sudo systemctl restart nginx
-
-
-Stop NGINX
 sudo systemctl stop nginx
-
-
-Start NGINX
 sudo systemctl start nginx
+```
 
----
+## Windows Services (AD / DNS)
+```powershell
+Get-Service dns
+Get-Service netlogon
+```
 
-Network Validation
+## Active Directory Operations
 
-Check IP Address
+## Create User
+```powershell
+New-ADUser -Name "John IT" -SamAccountName "john.it" -AccountPassword (ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force) -Enabled $true
+```
+
+## Create Group
+```powershell
+New-ADGroup -Name "IT_Admins" -GroupScope Global -GroupCategory Security
+```
+
+## Add User to Group
+```powershell
+Add-ADGroupMember -Identity "IT_Admins" -Members "john.it"
+```
+
+## Verify User
+```powershell
+Get-ADUser -Filter *
+```
+
+## Group Policy Operations
+
+## Force Policy Update (Client)
+```cmd
+gpupdate /force
+```
+
+## Verify GPO Application
+```cmd
+gpresult /r
+```
+
+Detailed report:
+```cmd
+gpresult /h C:\temp\gpo-report.html
+```
+
+## File Services Operations
+
+## Test Share Access
+```cmd
+\\NW-FS01\Finance
+```
+
+## Map Drive (Manual Test)
+```cmd
+net use F: \\NW-FS01\Finance
+```
+
+## Verify Permissions
+Confirm user is in correct security group
+Check NTFS + share permissions
+
+## Network Validation
+
+## Check IP
+```bash
 ip a
+```
+or
+```cmd
+ipconfig
+```
 
-
-Check Routing
+## Check Routing
+```bash
 ip route
+```
 
+## Test Connectivity
+```bash
+ping 10.10.20.102   # DC
+ping 10.10.20.x     # Servers
+```
 
-Test Connectivity (IP)
-ping 8.8.8.8
+## Test DNS (IMPORTANT)
+```cmd
+nslookup northwind.local
+nslookup google.com
+```
 
-
-Test DNS
-ping google.com
-
----
-
-Troubleshooting Workflow
+## Troubleshooting Workflow
 
 Follow this order:
 
-Check IP assignment
-Verify interface status
-Confirm default gateway
-Test connectivity (IP)
-Test DNS
-Check firewall (pfSense)
-Check service status
+1. Check IP assignment
+2. Verify interface status
+3. Confirm default gateway
+4. Verify DNS (must point to DC)
+5. Test connectivity (IP)
+6. Test DNS resolution
+7. Check firewall (pfSense)
+8. Check service status
 
----
+## Backup Operations
 
-
-Backup Operations
-
-Run Manual Backup
+## Run Manual Backup
 
 Proxmox GUI:
+
 VM → Backup → Backup now
 
-
-Verify Backup
-
+## Verify Backup
 Node → local → Backup
 Confirm .vma.zst file exists
 
-
-Restore Operations
-
-Restore VM
+## Restore VM
 Node → local → Backup
-Select backup
-Click Restore
+Select backup → Restore
 Assign new VM ID
 
-
-Validate Restored VM
-
+## Validate Restored VM
+```bash
 systemctl status nginx
+```
 
----
-
-Snapshot Operations
-
-Create Snapshot
+## Snapshot Operations
+```bash
 qm snapshot <vmid> <name>
-
-
-List Snapshots
 qm listsnapshot <vmid>
-
-
-Rollback Snapshot
 qm rollback <vmid> <name>
+```
 
-
-Template and Cloning
-
-Clone VM
+## Template and Cloning
 Right-click template → Clone
 
-
-Post-Clone Checks
-
+## Post-Clone Checks
 Verify IP address
 Check network interface
 Confirm hostname
 
----
-
-Storage Management
-
-Check Disk Usage
+## Storage Management
+```bash
 df -h
+```
 
+Extend disk:
 
-Extend Disk (Linux)
+```bash
 sudo growpart /dev/sda 3
 sudo pvresize /dev/sda3
 sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
 sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
+```
 
----
+## Incident Scenarios
 
-Incident Scenarios
-
-Scenario: No IP Address
-
-Actions:
-
-Check interface:
-ip a
-
-Apply netplan:
-sudo netplan apply
-
----
-
-Scenario: No Internet Access
+## Scenario: DNS Not Resolving 🔥
 
 Actions:
 
-Check gateway:
+```bash
+ipconfig
+nslookup northwind.local
+```
+
+Check:
+
+DNS server is DC
+DC reachable
+
+## Scenario: Cannot Join Domain
+
+Actions:
+
+Verify DNS → must be DC
+Check connectivity to DC
+Check time sync
+
+## Scenario: Cannot Access File Share
+
+Actions:
+
+Check group membership
+Verify permissions
+Test manual access
+
+## Scenario: No Internet Access
+```bash
 ip route
+```
+Check pfSense NAT + firewall
 
-Verify pfSense NAT and firewall
-
----
-
-Scenario: Service Down
-
-Actions:
-
-Check service:
+## Scenario: Service Down
+```bash
 systemctl status nginx
-
-Restart:
 sudo systemctl restart nginx
+```
 
----
-
-Scenario: Disk Full
-
-Actions:
-
-Check usage:
+## Scenario: Disk Full
+```bash
 df -h
-
-Remove unnecessary files
-Extend disk
-
----
-
-User Management (Proxmox)
-
-Add User
-Datacenter → Permissions → Users → Add
-
-Assign Role
-Datacenter → Permissions → Add → User Permission
-
----
+```
 
 ## Security Checks
-Ensure firewall enabled (Datacenter and Node)
-Verify access rules
-Avoid using root account for daily tasks
+Ensure firewall enabled (Proxmox + pfSense)
+Verify GPO enforcement
+Confirm least privilege access
+Avoid using root/admin unnecessarily
 
----
+## Automation
 
-Automation
-
-Snapshot Script Example:
-
+## Snapshot Script
 ```bash
 #!/bin/bash
 
 for vm in 102 103 104
 do
   qm snapshot $vm auto-snap-$(date +%F)
+done
 ```
 
----
+## Maintenance Tasks
 
-Maintenance Tasks
-
-Update Linux System
+## Linux
+```bash
 sudo apt update && sudo apt upgrade -y
-
-Clean Package Cache
 sudo apt clean
+```
 
----
+## Windows
+Apply updates
+Review event logs
 
-Key Principles
-
-Always validate before and after changes
+## Key Principles
+Validate before and after changes
 Use snapshots before major operations
-Prefer SSH over console access
+Centralize identity via Active Directory
+Enforce least privilege
 Follow structured troubleshooting
 Maintain consistent naming and configuration
 
----
-
-Summary
+## Summary
 
 This runbook provides a structured approach to operating the Northwind Enterprise Lab.
+
+Phase 1 established:
+
+Virtualization and networking foundation
+
+Phase 2 extends operations with:
+
+Active Directory management
+Group Policy enforcement
+File services administration
 
 It ensures:
 
